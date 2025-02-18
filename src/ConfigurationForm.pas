@@ -18,40 +18,21 @@ type
     tip: TLabeledEdit;
     filedit: TLabeledEdit;
     ComboBox1: TComboBox;
-    ImgList: TImageList;
     pinfo: TPanel;
     ScrollBox1: TScrollBox;
     pbottom: TPanel;
     CheckBox1: TCheckBox;
     ListView1: TListView;
-    ImgPanel1: TImgPanel;
-    ImgPanel2: TImgPanel;
     pnl_left: TPanel;
     imgboxFace: TImage;
     btnmsg_panel: TLabel;
     btnorg_panel: TLabel;
-    Label1: TLabel;
     pnl_right: TPanel;
     p1: TPanel;
     p2: TPanel;
     Image2: TImage;
     p_org: TPanel;
-    lblok: TImgPanel;
-    pnl1: TPanel;
-    Image1: TImage;
-    Image3: TImage;
-    btnLogin: TLabel;
-    edtNickName: TLabel;
-    edtSex: TLabel;
     Label2: TLabel;
-    lbl_phone: TLabel;
-    MlSkinLabel1: TLabel;
-    MlSkinLabel2: TLabel;
-    MlSkinLabel3: TLabel;
-    MlSkinLabel5: TLabel;
-    Image4: TImage;
-    Memo1: TMemo;
-    ImgPanel3: TImgPanel;
     Button1: TButton;
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormShow(Sender: TObject);
@@ -66,12 +47,10 @@ type
     procedure FormMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
     procedure ListView1DblClick(Sender: TObject);
     procedure ListView1Resize(Sender: TObject);
-    procedure ImgPanel2Click(Sender: TObject);
     procedure btnmsg_panelClick(Sender: TObject);
     procedure btnorg_panelClick(Sender: TObject);
     procedure Image2MouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
-    procedure lblokClick(Sender: TObject);
-    procedure Label1Click(Sender: TObject);
+    procedure Label2Click(Sender: TObject);
     procedure Button1Click(Sender: TObject);
   private
     file_map: TDictionary<string, string>;
@@ -114,7 +93,9 @@ var
 var
   Apps: TArray<TStartMenuApp>;
   App: TStartMenuApp;
-
+ const
+  PANEL_HEIGHT = 60;
+  ICON_SIZE = 32 ;
 implementation
 
 {$R *.dfm}
@@ -215,7 +196,7 @@ begin
     Panel.Parent := ScrollBox1;
 
     Panel.Align := alTop;
-    Panel.Height := 60;  // 设置Panel的高度
+    Panel.Height := PANEL_HEIGHT;  // 设置Panel的高度
     Panel.BevelOuter := bvNone; // 可选，移除边框
     Panel.ParentColor := False;
     Panel.StyleElements := [seClient];
@@ -225,8 +206,8 @@ begin
     Image := TImage.Create(Self);
     Image.Parent := Panel;
     Image.Picture.Icon := FileIcon;
-    Image.Width := 32;   // 设置图标的大小
-    Image.Height := 32;
+    Image.Width := ICON_SIZE;   // 设置图标的大小
+    Image.Height := ICON_SIZE;
     Image.OnDblClick := translateDblClick;
     // 创建显示文本的Label控件
     Label1 := TLabel.Create(Self);
@@ -406,7 +387,7 @@ end;
 
 procedure TCfgForm.Button1Click(Sender: TObject);
 begin
-dll_weather();
+  Buttoaction_translatoradd(self);
 end;
 
 procedure TCfgForm.AddFileInfoToJson(const Key, ImageFileName, FilePath, ToolTip: string);
@@ -455,7 +436,6 @@ end;
 procedure TCfgForm.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
   form1.node_rebuilder(Screen.WorkAreaHeight);
-//  FreeAndNil(closebtn);
   FreeAndNil(close1);
   g_core.nodes.is_configuring := false;
   file_map.Free;
@@ -491,6 +471,7 @@ begin
   // 获取列数（假设 ListView 至少有两列）
   ColCount := ListView1.Columns.Count;
 
+
   if ColCount > 1 then
   begin
     // 计算除最后一列外所有列的宽度
@@ -518,7 +499,6 @@ begin
   p1.Visible := true;
   p1.Align := alClient;
   pbottom.Visible := false;
-  pnl1.Visible:=False;
 
   btnmsg_panel.Transparent := False;
   btnorg_panel.Transparent := true;
@@ -526,49 +506,24 @@ begin
   btnmsg_panel.refresh;
   btnorg_panel.refresh;
 
-//  edtlookup.Clear;
-//  p_org.Visible := false;
-//  p_contact.Visible := True;
-//
-//  pnl_right_chat.Visible := True;
-//  pnl_right_chat.align := alclient;
-//  pnl_right_info.Visible := false;
-//
-//  btnmsg_panel.Transparent := False;
-//  btnorg_panel.Transparent := true;
-//
-//  btnmsg_panel.refresh;
-//  btnorg_panel.refresh;
-  Label1.refresh;
-//  imgboxFace.refresh;
-
 end;
 
 procedure TCfgForm.org_board_state;
 begin
-//  p1.Parent := nil;
   p1.Visible := false;
   btnorg_panel.Transparent := false;
   btnmsg_panel.Transparent := true;
 
   btnmsg_panel.refresh;
   btnorg_panel.refresh;
-     pnl1.Visible:=False;
   pbottom.Visible := true;
 end;
-        procedure TCfgForm.Label1Click(Sender: TObject);
+
+procedure TCfgForm.Label2Click(Sender: TObject);
 begin
-//       p1.Parent := nil;
-  p1.Visible := false;
-  btnorg_panel.Transparent := false;
-  btnmsg_panel.Transparent := false;
-
-  btnmsg_panel.refresh;
-  btnorg_panel.refresh;
-     pnl1.Visible:=true;
-  pbottom.Visible := False;
-
+  close();
 end;
+
 procedure TCfgForm.FormShow(Sender: TObject);
 var
   values: TArray<string>;
@@ -618,30 +573,6 @@ begin
 
   SetWindowCornerPreference(Handle);
 
-//  closebtn := TImgButton.Create(self);
-//  closebtn.Parent := Panel2;
-//
-//  closebtn.Left := filedit.Left + filedit.Width + 20;
-//  closebtn.Top := tip.Top;
-//  closebtn.SetBounds(closebtn.Left, closebtn.top, 48, 48);
-//
-//  closebtn.Image.LoadFromFile(ExtractFilePath(ParamStr(0)) + '/img/add_hover.png');
-//  closebtn.Image1.LoadFromFile(ExtractFilePath(ParamStr(0)) + '/img/add.png');
-//  closebtn.OnClick := Buttoaction_translatoradd;
-//  closebtn.Cursor := crHandpoint;
-
-//  close1 := TImgButton.Create(self);
-//  close1.Parent := Panel3;
-//  close1.Align := alRight;
-//
-//  close1.Width := 26;
-//  close1.Height := 32;
-//  close1.Image.LoadFromFile(ExtractFilePath(ParamStr(0)) + '/img/close_hover.png');
-//  close1.Image1.LoadFromFile(ExtractFilePath(ParamStr(0)) + '/img/close.png');
-//  close1.OnClick := closex;
-//  close1.Cursor := crHandpoint;
-
-
   btnmsg_panelClick(self);
 end;
 
@@ -677,18 +608,6 @@ begin
     OpenDlg.Free;
     BringToFront;
   end;
-end;
-
-procedure TCfgForm.ImgPanel2Click(Sender: TObject);
-begin
-  close;
-end;
-
-
-
-procedure TCfgForm.lblokClick(Sender: TObject);
-begin
-Buttoaction_translatoradd(self);
 end;
 
 procedure TCfgForm.ListView1DblClick(Sender: TObject);
@@ -749,3 +668,4 @@ begin
 end;
 
 end.
+

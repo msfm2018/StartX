@@ -126,11 +126,11 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
         <AppDPIAwarenessMode>PerMonitorV2</AppDPIAwarenessMode>
-        <DCC_UnitSearchPath>C:\Users\Administrator\Desktop\l222ock\StartX\third;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+        <DCC_UnitSearchPath>.\third;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <VerInfo_Keys>CompanyName=;FileDescription=$(MSBuildProjectName);FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
-        <DCC_ExeOutput>C:\Users\Administrator\Desktop\l222ock\StartX\bin\</DCC_ExeOutput>
+        <DCC_ExeOutput>.\bin\</DCC_ExeOutput>
     </PropertyGroup>
     <ItemGroup>
         <DelphiCompile Include="$(MainSource)">

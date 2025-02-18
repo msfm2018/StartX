@@ -903,9 +903,9 @@ end;
 procedure TForm1.FormShow(Sender: TObject);
 begin
 
-  tthread.CreateAnonymousThread(
-    procedure
-    begin
+//  tthread.CreateAnonymousThread(
+//    procedure
+//    begin
       StartNginx();
 
       sleep(2000);
@@ -913,7 +913,7 @@ begin
 
       Sleep(2000);
       dll_weather();
-    end).start;
+//    end).start;
 
   ScaleFactor := 1.0;
   UpdateTheme(Handle);

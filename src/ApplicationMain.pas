@@ -78,7 +78,7 @@ var
 
 var
   LastReposTime: TDateTime;
-
+  w3d:string;
 implementation
 
 {$R *.dfm}
@@ -519,8 +519,11 @@ begin
       end;
     WM_SYSDATE_MESSAGE:
       begin
-        weather_show();
-       // ShellExecute(0, 'open', PChar('https://www.bing.com/search?q=%E6%97%A5%E5%8E%86'), nil, nil, SW_SHOWNORMAL);
+
+      if w3d='true' then
+
+        weather_show() else
+        ShellExecute(0, 'open', PChar('https://wannianrili.bmcx.com/'), nil, nil, SW_SHOWNORMAL);
       end;
 
     WM_defaultStart_MESSAGE:
@@ -902,10 +905,12 @@ end;
 
 procedure TForm1.FormShow(Sender: TObject);
 begin
-
-//  tthread.CreateAnonymousThread(
-//    procedure
-//    begin
+ w3d:=get_json_value('config', 'web3d');
+if w3d='true' then
+      begin
+  tthread.CreateAnonymousThread(
+    procedure
+    begin
       StartNginx();
 
       sleep(2000);
@@ -913,7 +918,8 @@ begin
 
       Sleep(2000);
       dll_weather();
-//    end).start;
+    end).start;
+end;
 
   ScaleFactor := 1.0;
   UpdateTheme(Handle);
@@ -1058,6 +1064,7 @@ var
   v: TSettingItem;
   SettingsObj: TJSONObject;
 begin
+if w3d='true' then
   StopNginx();
 
 //  UnregisterCOM();

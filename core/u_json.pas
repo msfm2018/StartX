@@ -22,6 +22,7 @@ type
     Shortcut: string;
     translator: string;
     debug: string;
+    web3d:string;
     layout: string;
     style: string;
     definestart:string;
@@ -207,6 +208,7 @@ begin
       translator := ConfigObj.GetValue('translator').Value;
       definestart:=  ConfigObj.GetValue('definestart').Value;
       debug := ConfigObj.GetValue('debug').Value;
+      web3d:=ConfigObj.GetValue('debug').Value;
       layout := ConfigObj.GetValue('layout').Value;
       style := ConfigObj.GetValue('style').Value;
     end;

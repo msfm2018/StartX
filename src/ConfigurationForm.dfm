@@ -3,7 +3,7 @@ object CfgForm: TCfgForm
   Top = 0
   BorderStyle = bsNone
   ClientHeight = 569
-  ClientWidth = 1097
+  ClientWidth = 820
   Color = clWhitesmoke
   Font.Charset = GB2312_CHARSET
   Font.Color = clWindowText
@@ -552,54 +552,6 @@ object CfgForm: TCfgForm
       Stretch = True
       Visible = False
     end
-    object btnmsg_panel: TLabel
-      AlignWithMargins = True
-      Left = -16
-      Top = 109
-      Width = 88
-      Height = 38
-      Cursor = crHandPoint
-      Alignment = taCenter
-      AutoSize = False
-      Caption = #35774#32622
-      Color = 1748250
-      Font.Charset = ANSI_CHARSET
-      Font.Color = clWhite
-      Font.Height = -16
-      Font.Name = 'Tahoma'
-      Font.Style = []
-      ParentColor = False
-      ParentFont = False
-      Transparent = False
-      Layout = tlCenter
-      OnClick = btnmsg_panelClick
-    end
-    object btnorg_panel: TLabel
-      AlignWithMargins = True
-      Left = -8
-      Top = 173
-      Width = 123
-      Height = 38
-      Cursor = crHandPoint
-      Margins.Left = 8
-      Margins.Top = 8
-      Margins.Right = 8
-      Margins.Bottom = 8
-      Alignment = taCenter
-      AutoSize = False
-      Caption = #33258#23450#20041'          '
-      Color = 1748250
-      Font.Charset = ANSI_CHARSET
-      Font.Color = clWhite
-      Font.Height = -16
-      Font.Name = 'Tahoma'
-      Font.Style = []
-      ParentColor = False
-      ParentFont = False
-      Transparent = True
-      Layout = tlCenter
-      OnClick = btnorg_panelClick
-    end
     object Label2: TLabel
       Left = -2
       Top = 517
@@ -624,7 +576,7 @@ object CfgForm: TCfgForm
   object pnl_right: TPanel
     Left = 57
     Top = 0
-    Width = 1040
+    Width = 763
     Height = 569
     Align = alClient
     BevelEdges = []
@@ -632,10 +584,11 @@ object CfgForm: TCfgForm
     Color = clWhitesmoke
     ParentBackground = False
     TabOrder = 1
+    ExplicitWidth = 1040
     object p1: TPanel
-      Left = 257
+      Left = 0
       Top = 0
-      Width = 783
+      Width = 763
       Height = 569
       Align = alClient
       BevelEdges = []
@@ -652,6 +605,8 @@ object CfgForm: TCfgForm
       ParentCtl3D = False
       ParentFont = False
       TabOrder = 0
+      ExplicitLeft = 257
+      ExplicitWidth = 783
       object ScrollBox1: TScrollBox
         Left = 0
         Top = 0
@@ -673,35 +628,23 @@ object CfgForm: TCfgForm
         OnMouseLeave = ScrollBox1MouseLeave
       end
     end
-    object p_org: TPanel
+    object pinfo: TPanel
       Left = 0
       Top = 0
-      Width = 257
-      Height = 569
-      Align = alLeft
-      BevelEdges = []
-      BevelOuter = bvNone
-      Color = clWhitesmoke
-      Ctl3D = False
-      ParentBackground = False
-      ParentCtl3D = False
-      TabOrder = 1
-    end
-    object pinfo: TPanel
-      Left = 257
-      Top = 0
-      Width = 783
+      Width = 763
       Height = 569
       Align = alClient
       BevelEdges = []
       BevelOuter = bvNone
       Color = clWhitesmoke
       ParentBackground = False
-      TabOrder = 2
+      TabOrder = 1
+      ExplicitLeft = 257
+      ExplicitWidth = 783
       object ListView1: TListView
         Left = 0
         Top = 0
-        Width = 783
+        Width = 763
         Height = 429
         Margins.Left = 0
         Margins.Top = 0
@@ -727,11 +670,12 @@ object CfgForm: TCfgForm
         ViewStyle = vsReport
         OnDblClick = ListView1DblClick
         OnResize = ListView1Resize
+        ExplicitWidth = 783
       end
       object pbottom: TPanel
         Left = 0
         Top = 429
-        Width = 783
+        Width = 763
         Height = 123
         Align = alBottom
         BevelEdges = [beTop]
@@ -739,6 +683,7 @@ object CfgForm: TCfgForm
         Color = clWhitesmoke
         ParentBackground = False
         TabOrder = 2
+        ExplicitWidth = 783
         object ComboBox1: TComboBox
           Left = 628
           Top = 44
@@ -871,7 +816,7 @@ object CfgForm: TCfgForm
       object p2: TPanel
         Left = 0
         Top = 552
-        Width = 783
+        Width = 763
         Height = 17
         Align = alBottom
         BevelEdges = []
@@ -885,11 +830,12 @@ object CfgForm: TCfgForm
         ParentBackground = False
         ParentFont = False
         TabOrder = 1
+        ExplicitWidth = 783
         object Image2: TImage
-          Left = 769
+          Left = 749
           Top = 0
           Width = 14
-          Height = 17
+          Height = 13
           Cursor = crSizeNWSE
           Align = alRight
           AutoSize = True
@@ -908,6 +854,7 @@ object CfgForm: TCfgForm
             B001286602160300FA16C9E9B10252C70000000049454E44AE426082}
           OnMouseDown = Image2MouseDown
           ExplicitLeft = 736
+          ExplicitHeight = 17
         end
       end
     end

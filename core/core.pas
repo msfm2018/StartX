@@ -88,20 +88,13 @@ procedure remove_json(Key: string);
 
 procedure add_json(Key, image_file_name, FilePath, tool_tip: string; Is_path_valid: boolean; memory: TMemoryStream);
 
-procedure SimulateCtrlEsc;
+
 
 procedure EmptyRecycleBin;
 
 
 
-//    天气相关
-procedure StartNginx;
 
-procedure StopNginx;
-
-//procedure RegisterDLL;
-//
-//procedure UnregisterDLL;
 
 procedure SetWindowCornerPreference(hWnd: hWnd);
 
@@ -124,93 +117,6 @@ const
 
 
 
-procedure StartNginx;
-var
-  NginxPath: string;
-  StartupInfo: TStartupInfo;
-  ProcessInfo: TProcessInformation;
-  Success: Boolean;
-  WorkingDir: string;
-  CommandLine: string;
-begin
-
-  // 设置 nginx.exe 的路径，根据实际情况修改
-  NginxPath := ExtractFilePath(ParamStr(0)) + 'nginx-1.27.4\nginx.exe';
-  WorkingDir := ExtractFilePath(ParamStr(0)) + 'nginx-1.27.4';
-
-  if FileExists(NginxPath) then
-  begin
-    FillChar(StartupInfo, SizeOf(StartupInfo), 0);
-    StartupInfo.cb := SizeOf(StartupInfo);
-    FillChar(ProcessInfo, SizeOf(ProcessInfo), 0);
-    StartupInfo.dwFlags := STARTF_USESHOWWINDOW;
-     StartupInfo.wShowWindow := SW_HIDE; // Hide the window
-    // 构造命令行参数
-    CommandLine := Format('"%s" -p "%s"', [NginxPath, WorkingDir]);
-
-    // 启动 nginx.exe
-    Success := CreateProcess(nil, PChar(CommandLine), nil, nil, False, 0, nil, PChar(WorkingDir), StartupInfo, ProcessInfo);
-    if Success then
-    begin
-      // 关闭进程和线程句柄
-      CloseHandle(ProcessInfo.hProcess);
-      CloseHandle(ProcessInfo.hThread);
-    end
-    else
-    begin
-//      ShowMessage('无法启动 Nginx: ' + SysErrorMessage(GetLastError));
-    end;
-  end
-  else
-  begin
-//    ShowMessage('Nginx 可执行文件未找到: ' + NginxPath);
-  end;
-end;
-
-procedure StopNginx;
-var
-  SnapshotHandle: THandle;
-  ProcessEntry: TProcessEntry32;
-  ProcessHandle: THandle;
-begin
-  // 创建进程快照
-  SnapshotHandle := CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-  if SnapshotHandle <> INVALID_HANDLE_VALUE then
-  begin
-    try
-      // 初始化进程入口结构体
-      ProcessEntry.dwSize := SizeOf(TProcessEntry32);
-      // 获取第一个进程信息
-      if Process32First(SnapshotHandle, ProcessEntry) then
-      begin
-        repeat
-          // 检查进程名称是否为 nginx.exe
-          if AnsiSameText(ExtractFileName(ProcessEntry.szExeFile), 'nginx.exe') then
-          begin
-            // 打开进程句柄
-            ProcessHandle := OpenProcess(PROCESS_TERMINATE, False, ProcessEntry.th32ProcessID);
-            if ProcessHandle <> 0 then
-            begin
-              try
-                // 终止进程
-                if not TerminateProcess(ProcessHandle, 0) then
-                begin
-//                  ShowMessage('无法终止 Nginx 进程: ' + SysErrorMessage(GetLastError));
-                end;
-              finally
-                // 关闭进程句柄
-                CloseHandle(ProcessHandle);
-              end;
-            end;
-          end;
-        until not Process32Next(SnapshotHandle, ProcessEntry);
-      end;
-    finally
-      // 关闭进程快照句柄
-      CloseHandle(SnapshotHandle);
-    end;
-  end;
-end;
 
 procedure SetWindowCornerPreference(hWnd: hWnd);
 var
@@ -232,11 +138,7 @@ begin
   SHEmptyRecycleBin(0, nil, SHERB_NOCONFIRMATION or SHERB_NOPROGRESSUI or SHERB_NOSOUND);
 end;
 
-procedure SimulateCtrlEsc;
-begin
-  OpenStartOnMonitor();
 
-end;
 
 procedure t_utils.CopyFileToFolder(const SourceFile, DestinationFolder: string);
 var

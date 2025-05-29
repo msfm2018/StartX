@@ -8,7 +8,7 @@
         <TargetedPlatforms>3</TargetedPlatforms>
         <AppType>Application</AppType>
         <FrameworkType>VCL</FrameworkType>
-        <ProjectVersion>20.2</ProjectVersion>
+        <ProjectVersion>20.3</ProjectVersion>
         <Platform Condition="'$(Platform)'==''">Win64</Platform>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
@@ -139,7 +139,6 @@
         <DCCReference Include="core\core.pas"/>
         <DCCReference Include="core\event.pas"/>
         <DCCReference Include="core\u_json.pas"/>
-        <DCCReference Include="core\PopupMenuManager.pas"/>
         <DCCReference Include="src\ApplicationMain.pas">
             <Form>Form1</Form>
         </DCCReference>
@@ -149,9 +148,7 @@
         <DCCReference Include="src\InfoBarForm.pas">
             <Form>bottomForm</Form>
         </DCCReference>
-        <DCCReference Include="core\plug.pas"/>
         <DCCReference Include="core\utils.pas"/>
-        <DCCReference Include="core\TaskbarList.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
@@ -182,6 +179,12 @@
                 <Platform value="Win64">True</Platform>
             </Platforms>
             <Deployment Version="5">
+                <DeployFile LocalName="bin\StartX.exe" Configuration="Debug" Class="ProjectOutput">
+                    <Platform Name="Win64">
+                        <RemoteName>StartX.exe</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
                 <DeployFile LocalName="bin\StartX.exe" Configuration="Release" Class="ProjectOutput"/>
                 <DeployFile LocalName="bin\WinBarDock.exe" Configuration="Release" Class="ProjectOutput"/>
                 <DeployClass Name="AdditionalDebugSymbols">
@@ -295,6 +298,16 @@
                     </Platform>
                     <Platform Name="Android64">
                         <RemoteDir>res\values-v31</RemoteDir>
+                        <Operation>1</Operation>
+                    </Platform>
+                </DeployClass>
+                <DeployClass Name="AndroidSplashStylesV35">
+                    <Platform Name="Android">
+                        <RemoteDir>res\values-v35</RemoteDir>
+                        <Operation>1</Operation>
+                    </Platform>
+                    <Platform Name="Android64">
+                        <RemoteDir>res\values-v35</RemoteDir>
                         <Operation>1</Operation>
                     </Platform>
                 </DeployClass>

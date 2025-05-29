@@ -25,13 +25,10 @@ type
     ListView1: TListView;
     pnl_left: TPanel;
     imgboxFace: TImage;
-    btnmsg_panel: TLabel;
-    btnorg_panel: TLabel;
     pnl_right: TPanel;
     p1: TPanel;
     p2: TPanel;
     Image2: TImage;
-    p_org: TPanel;
     Label2: TLabel;
     Button1: TButton;
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
@@ -47,7 +44,6 @@ type
     procedure FormMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
     procedure ListView1DblClick(Sender: TObject);
     procedure ListView1Resize(Sender: TObject);
-    procedure btnmsg_panelClick(Sender: TObject);
     procedure btnorg_panelClick(Sender: TObject);
     procedure Image2MouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
     procedure Label2Click(Sender: TObject);
@@ -56,7 +52,6 @@ type
     file_map: TDictionary<string, string>;
     procedure AddFileInfoToJson(const Key, ImageFileName, FilePath, ToolTip: string);
     procedure ClearInputs;
-    procedure show_aapp(Path, FileName: string);
     procedure PanelMouseEnter(Sender: TObject);
     procedure PanelMouseLeave(Sender: TObject);
 
@@ -64,14 +59,13 @@ type
     procedure Buttoaction_translatoradd(Sender: TObject);
     procedure AdjustLastColumnWidth;
     procedure translateDblClick(Sender: TObject);
-    procedure msg_board_state;
     procedure org_board_state;
 
   public
     FShadowAlpha: Byte; // 阴影透明度 (0-255)
     FShadowColor: TColor; // 阴影颜色
 
-//    closebtn: TImgButton;
+
     close1: TImgButton;
   end;
 
@@ -80,10 +74,7 @@ type
     Path: string;
   end;
 
-  TStartMenuApps = class
-  public
-    class function GetApps: TArray<TStartMenuApp>;
-  end;
+
 
 var
   xchange: Boolean = false;
@@ -91,7 +82,7 @@ var
   FShadowForm: tform;
 
 var
-  Apps: TArray<TStartMenuApp>;
+
   App: TStartMenuApp;
  const
   PANEL_HEIGHT = 60;
@@ -176,63 +167,6 @@ begin
 
 end;
 
-procedure TCfgForm.show_aapp(Path, FileName: string);
-var
-  Panel: TImgPanel;
-  Image: TImage;
-  Label1: TLabel;
-  FileIcon: TIcon;
-  FilePath: string;
-begin
-  FilePath := Path;
-
-  FileIcon := TIcon.Create;
-  try
-    FileIcon.Handle := ExtractIcon(HInstance, PChar(FilePath), 0);
-
-    ScrollBox1.VertScrollBar.Visible := True;  // 启用垂直滚动条
-
-    Panel := TImgPanel.Create(Scrollbox1);
-    Panel.Parent := ScrollBox1;
-
-    Panel.Align := alTop;
-    Panel.Height := PANEL_HEIGHT;  // 设置Panel的高度
-    Panel.BevelOuter := bvNone; // 可选，移除边框
-    Panel.ParentColor := False;
-    Panel.StyleElements := [seClient];
-    Panel.extendA := FileName;
-    Panel.extendB := Path; //
-    // 创建显示图标的Image控件
-    Image := TImage.Create(Self);
-    Image.Parent := Panel;
-    Image.Picture.Icon := FileIcon;
-    Image.Width := ICON_SIZE;   // 设置图标的大小
-    Image.Height := ICON_SIZE;
-    Image.OnDblClick := translateDblClick;
-    // 创建显示文本的Label控件
-    Label1 := TLabel.Create(Self);
-    Label1.Parent := Panel;
-    Label1.Caption := FileName;
-    Label1.AutoSize := True;
-    Label1.OnDblClick := translateDblClick;
-
-    Image.Left := 10; // (Panel.Width - Image.Width - Label1.Width - 10) div 2;  // 图标居中
-    Image.Top := (Panel.Height - Image.Height) div 2;  // 图标垂直居中
-
-    Label1.Left := Image.Left + Image.Width + 10;  // 图标和文本之间的间距
-    Label1.Top := (Panel.Height - Label1.Height) div 2;  // 文本垂直居中
-
-     // 设置鼠标事件处理程序
-    Panel.OnMouseEnter := PanelMouseEnter;
-    Panel.OnMouseLeave := PanelMouseLeave;
-    Panel.ParentBackground := False;
-    Panel.OnDblClick := PanelDblClick;
-  finally
-    FileIcon.Free;
-  end;
-
-end;
-
 procedure TCfgForm.translateDblClick(Sender: TObject);
 begin
   if Sender is tlabel then
@@ -254,49 +188,9 @@ begin
 
 end;
 
-procedure LoadIconFromDll(const extension: string; Image: TImage);
-var
-  hIcon1: HICON;
-begin
-  hIcon1 := GetFileIcon1(PChar(extension));
 
-  if hIcon1 <> 0 then
-  begin
-    Image.Picture.Icon.Handle := hIcon1;
 
-  end
 
-end;
-
-class function TStartMenuApps.GetApps: TArray<TStartMenuApp>;
-var
-  AppsJSON: string;
-  JSONArray: TJSONArray;
-  JSONValue: TJSONValue;
-  App: TStartMenuApp;
-  AppList: TArray<TStartMenuApp>;
-  I: Integer;
-begin
-  // Call DLL function
-  AppsJSON := string(GetStartMenuApps);
-
-  // Parse JSON string
-  JSONArray := TJSONObject.ParseJSONValue(AppsJSON) as TJSONArray;
-  try
-    SetLength(AppList, JSONArray.Count);
-    for I := 0 to JSONArray.Count - 1 do
-    begin
-      JSONValue := JSONArray.Items[I];
-      App.Name := JSONValue.GetValue<string>('name');
-      App.Path := JSONValue.GetValue<string>('path');
-      AppList[I] := App;
-    end;
-  finally
-    JSONArray.Free;
-  end;
-
-  Result := AppList;
-end;
 
 procedure TCfgForm.Buttoaction_translatoradd(Sender: TObject);
 var
@@ -462,7 +356,6 @@ procedure TCfgForm.AdjustLastColumnWidth;
 var
   TotalWidth: Integer;
   ColCount: Integer;
-  I: Integer;
   UsedWidth: Integer;
 begin
   // 获取 ListView 的总宽度
@@ -483,39 +376,16 @@ begin
   end;
 end;
 
-procedure TCfgForm.btnmsg_panelClick(Sender: TObject);
-begin
-  msg_board_state();
-end;
-
 procedure TCfgForm.btnorg_panelClick(Sender: TObject);
 begin
   org_board_state();
 end;
 
-procedure TCfgForm.msg_board_state;
-begin
-  p1.Parent := p_org;
-  p1.Visible := true;
-  p1.Align := alClient;
-  pbottom.Visible := false;
-
-  btnmsg_panel.Transparent := False;
-  btnorg_panel.Transparent := true;
-
-  btnmsg_panel.refresh;
-  btnorg_panel.refresh;
-
-end;
 
 procedure TCfgForm.org_board_state;
 begin
   p1.Visible := false;
-  btnorg_panel.Transparent := false;
-  btnmsg_panel.Transparent := true;
 
-  btnmsg_panel.refresh;
-  btnorg_panel.refresh;
   pbottom.Visible := true;
 end;
 
@@ -526,7 +396,6 @@ end;
 
 procedure TCfgForm.FormShow(Sender: TObject);
 var
-  values: TArray<string>;
   v: TSettingItem;
   tmp_key: string;
 begin
@@ -542,10 +411,7 @@ begin
   AdjustLastColumnWidth();
 
   EnableNonClientDpiScaling(Handle);
-  Apps := TStartMenuApps.GetApps;
-  for App in Apps do
 
-    show_aapp(App.Path, App.Name);
   filedit.Text := '';
   file_map := TDictionary<string, string>.Create;
 
@@ -573,7 +439,7 @@ begin
 
   SetWindowCornerPreference(Handle);
 
-  btnmsg_panelClick(self);
+  org_board_state();
 end;
 
 procedure TCfgForm.Image2MouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);

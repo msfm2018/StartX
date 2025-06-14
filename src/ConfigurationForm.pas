@@ -23,8 +23,6 @@ type
     pbottom: TPanel;
     CheckBox1: TCheckBox;
     ListView1: TListView;
-    pnl_left: TPanel;
-    imgboxFace: TImage;
     pnl_right: TPanel;
     p1: TPanel;
     p2: TPanel;
@@ -400,7 +398,6 @@ var
   tmp_key: string;
 begin
 
-// 清空原有的 ListView 数据
   ListView1.Items.Clear;
 
   // 设置 ListView 的列

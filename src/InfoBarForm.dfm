@@ -6,12 +6,12 @@ object bottomForm: TbottomForm
   ClientHeight = 678
   ClientWidth = 86
   Color = 15066597
-  Font.Charset = DEFAULT_CHARSET
+  Font.Charset = ANSI_CHARSET
   Font.Color = clWindowText
   Font.Height = -12
-  Font.Name = 'Tahoma'
+  Font.Name = 'Segoe UI'
   Font.Style = []
   OnClose = FormClose
   OnShow = FormShow
-  TextHeight = 14
+  TextHeight = 15
 end

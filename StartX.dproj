@@ -3,7 +3,7 @@
         <ProjectGuid>{8BAAD718-4B3C-4B36-BF48-A5AF5314EBBF}</ProjectGuid>
         <MainSource>StartX.dpr</MainSource>
         <Base>True</Base>
-        <Config Condition="'$(Config)'==''">Debug</Config>
+        <Config Condition="'$(Config)'==''">Release</Config>
         <ProjectName Condition="'$(ProjectName)'==''">StartX</ProjectName>
         <TargetedPlatforms>3</TargetedPlatforms>
         <AppType>Application</AppType>

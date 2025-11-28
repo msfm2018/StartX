@@ -23,6 +23,8 @@ type
 
     original_size: TSize;
     center_point: TPoint;
+    procedure LaunchAction();
+
   end;
 
   t_node_container = record
@@ -281,6 +283,23 @@ begin
     end;
     g_core.json.Settings.Remove(Key);
   end;
+
+end;
+
+{ _node }
+
+procedure _node.LaunchAction;
+begin
+  if Self._tip = '开始菜单' then
+    begin
+      OpenStartOnMonitor();
+    end
+    else if Self._tip = '' then // 假设没有提示信息意味着是常规启动
+      g_core.utils.launch_app(Self.file_path)
+    else if not BringWindowToFront(Self._tip) then // 尝试切换到已运行窗口
+      g_core.utils.launch_app(Self.file_path)
+    else    ;
+      // 切换成功，什么都不做或执行其他操作
 
 end;
 

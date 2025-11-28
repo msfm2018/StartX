@@ -8,9 +8,37 @@ uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Registry, Winapi.Dwmapi, core, Dialogs, ExtCtrls, Generics.Collections,
   Vcl.Imaging.pngimage, Winapi.ShellAPI, inifiles, Vcl.Imaging.jpeg, ComObj,
-  PsAPI, utils, System.SyncObjs, System.Math,
-  System.JSON, u_json, Vcl.Menus, InfoBarForm,
-  System.Generics.Collections, event, Vcl.StdCtrls;
+  PsAPI, utils, System.SyncObjs, System.Math, System.JSON, u_json, Vcl.Menus,
+  InfoBarForm, System.Generics.Collections, event, Vcl.StdCtrls;
+
+const
+  DWM_BB_ENABLE = $00000001;
+  DWM_BB_BLURREGION = $00000002;
+  DWM_BB_TRANSITIONONMAXIMIZED = $00000004;
+
+type
+  DWM_BLURBEHIND = record
+    dwFlags: DWORD;
+    fEnable: BOOL;
+    hRgnBlur: HRGN;
+    fTransitionOnMaximized: BOOL;
+  end;
+
+const
+  // Win11 22H2+ 官方推荐毛玻璃类型
+  DWMWA_SYSTEMBACKDROP_TYPE = 38;
+  DWMWA_WINDOW_CORNER_PREFERENCE = 33;
+
+type
+  TBackdropType = (btAuto = 0,  // 系统自动（深色=深色Acrylic，浅色=浅色Acrylic） ← 最强推荐！
+    btNone = 1, btMica = 2,  // Mica（轻量，类似主窗口背景）
+    btAcrylic = 3,  // 传统强模糊 Acrylic（你原来最想要的那种）
+    btTabbedMica = 4   // 带标签页的 Mica
+  );
+
+  TCornerPreference = (cpDefault = 0, cpDoNotRound = 1, cpRound = 2, cpRoundSmall = 3);
+
+function DwmEnableBlurBehindWindow(hWnd: HWND; const pBlurBehind: DWM_BLURBEHIND): HRESULT; stdcall; external 'dwmapi.dll' delayed;
 
 type
   TForm1 = class(TForm)
@@ -49,6 +77,7 @@ type
     procedure form_mouse_wheel(WheelMsg: TWMMouseWheel);
 
     procedure AdjustNodeSize(Node: _node; Rate: Double);
+    procedure ApplyFormSnapping(screenHeight: Integer);
   public
     procedure node_rebuilder(screenHeight: integer);
     procedure adjust_node_layout(screenHeight: integer);
@@ -56,14 +85,13 @@ type
     procedure nodeimgload;
     procedure show_side_form;
 
-    procedure PureCalculateAndPositionNodes;
-
   end;
 
 var
   Form1: TForm1;
   label_top, label_left: integer;
   g_mousePos: TPoint;
+  MainFormHandle: THandle;
 
 var
   FormPosition: TFormPositions;
@@ -86,6 +114,26 @@ implementation
 const
   kGetPreferredBrightnessRegKey = 'Software\Microsoft\Windows\CurrentVersion\Themes\Personalize';
   kGetPreferredBrightnessRegValue = 'AppsUseLightTheme';
+
+function ApplyWin11Acrylic(hWnd: hWnd; Backdrop: TBackdropType = btAuto; Corner: TCornerPreference = cpRound): Boolean;
+var
+  btValue, cornerValue: DWORD;
+begin
+  Result := True;
+
+  // 毛玻璃主体
+  btValue := Ord(Backdrop);
+  if DwmSetWindowAttribute(hWnd, DWMWA_SYSTEMBACKDROP_TYPE, @btValue, SizeOf(btValue)) <> S_OK then
+    Result := False;
+
+  // 圆角（Win11 经典 8~12px 圆角）
+  cornerValue := Ord(Corner);
+  DwmSetWindowAttribute(hWnd, DWMWA_WINDOW_CORNER_PREFERENCE, @cornerValue, SizeOf(cornerValue));
+
+  // 可选：强制启用暗色标题栏（即使 bsNone 也保险）
+  btValue := 1; // 1=暗色
+  DwmSetWindowAttribute(hWnd, 20 {DWMWA_USE_IMMERSIVE_DARK_MODE}, @btValue, SizeOf(btValue));
+end;
 
 procedure UpdateTheme(hWnd: hWnd);
 var
@@ -121,9 +169,8 @@ begin
       mouseStruct := PMSLLHOOKSTRUCT(lParam);
       if mouseStruct <> nil then
       begin
-          // 只记录位置，不访问窗体控件
         g_mousePos := mouseStruct^.pt;
-        PostMessage(form1.Handle, WM_USER + 2025, 0, 0); // 通知主线程更新界面
+        PostMessage(MainFormHandle, WM_USER + 2025, 0, 0); // 通知主线程更新界面
       end;
     end;
   end;
@@ -174,21 +221,20 @@ begin
   NodeCount := g_core.json.Settings.Count;
   kys := g_core.json.Settings;
 
-  ClientCenterY := Round((Self.ClientHeight - NodeSize * ScaleFactor)) div 2;
-
+//  ClientCenterY := Round((Self.ClientHeight - NodeSize * ScaleFactor)) div 2;
+  ClientCenterY := Round((Self.ClientHeight - NodeSize * ScaleFactor) / 2);
   try
     try
 
       g_core.nodes.count := NodeCount;
 
       if g_core.nodes.Nodes <> nil then
-        for Node in g_core.nodes.Nodes do
-        begin
-          kys.TryGetValue(Node.key, v);
-          if not v.Is_path_valid then
-            FreeAndNil(v.memory_image);
-          FreeAndNil(Node);
-        end;
+      begin
+        for var ii := 0 to High(g_core.nodes.Nodes) do
+          FreeAndNil(g_core.nodes.Nodes[ii]);
+      end;
+      g_core.nodes.Nodes := nil;  // 或 SetLength(..., 0);
+
 
       Form1.height := NodeSize + NodeSize div 2 + 130;
 
@@ -227,7 +273,14 @@ begin
             if not g_core.ImageCache.TryGetValue(MValue.image_file_name, p) then
             begin
 
-              Node.Picture.LoadFromFile(ExtractFilePath(ParamStr(0)) + 'img\' + MValue.image_file_name);
+           //   Node.Picture.LoadFromFile(ExtractFilePath(ParamStr(0)) + 'img\' + MValue.image_file_name);
+
+              var imgPath := IncludeTrailingPathDelimiter(ExtractFilePath(ParamStr(0))) + 'img' + PathDelim + MValue.image_file_name;
+              if FileExists(imgPath) then
+                Node.Picture.LoadFromFile(imgPath)
+              else
+                ;
+    // 处理缺图
 
             end
             else
@@ -280,8 +333,9 @@ begin
 
   gdraw_text := Node._tip;
 
-  label_top := Node.Top - 65;
-  label_left := Node.Left + (Node.Width div 2);
+  label_top := Self.ClientHeight - 30;
+
+  label_left := Self.ClientWidth div 2;
 
   hoverLabel := true;
   RunOnce := False;
@@ -325,8 +379,10 @@ begin
     var Node := _node(Sender);
     if hoverLabel then
     begin
-      label_top := Node.Top - 35;
-      label_left := Node.Left + (Node.Width div 4); //- (hoverLabel.Width div 2);
+      label_top := Self.ClientHeight - 30; // 距离 Form 底部约 30 像素
+
+
+      label_left := Self.ClientWidth div 2;
     end;
 
     GetCursorPos(lp);
@@ -368,9 +424,6 @@ begin
       for I := 0 to g_core.nodes.count - 1 do
       begin
         Current_node := g_core.nodes.Nodes[I];
-  //           if Node= Current_node then
-  //             Continue;
-
 
         a := Current_node.Left - ScreenToClient(lp).X + Current_node.Width div 2;
         b := Current_node.Top - ScreenToClient(lp).Y + Current_node.Height div 4;
@@ -407,12 +460,12 @@ begin
           Current_node.SetBounds(Current_node.center_point.x - NewWidth div 2, newTop, NewWidth, NewHeight);
         end;
 
-
   //    中间往外凸显
   //       Current_node.SetBounds(Current_node.center_x - NewWidth div 2, Current_node.center_y - NewHeight div 2, NewWidth, NewHeight);
 
       end;
     end;
+
     smooth_layout_adjustment(Self);
 
   end;
@@ -442,18 +495,7 @@ begin
   if (oldNode = _node(Sender).Name) and (_node(Sender)._tip <> '开始菜单') then
     Exit;
   oldNode := _node(Sender).Name;
-
-  if _node(Sender)._tip = '开始菜单' then
-  begin
-
-    OpenStartOnMonitor();
-  end
-  else if _node(Sender)._tip = '' then
-    g_core.utils.launch_app(_node(Sender).file_path)
-  else if not BringWindowToFront(_node(Sender)._tip) then
-    g_core.utils.launch_app(_node(Sender).file_path)
-  else
-    g_core.utils.launch_app(_node(Sender).file_path);
+  _node(Sender).LaunchAction();
 
   EventDef.isLeftClick := False;
 
@@ -478,27 +520,6 @@ begin
 
   RegisterHotKey(Handle, 119, MOD_CONTROL, Ord('B'));
 
-end;
-
-function FindWindowByProcessId(dwProcessId: DWORD): hWnd;
-var
-  hWnd1: hWnd;
-  dwPid: DWORD;
-begin
-  Result := 0;
-  hWnd1 := GetTopWindow(0); // Get the first window
-
-
-  while hWnd1 <> 0 do
-  begin
-    GetWindowThreadProcessId(hWnd1, @dwPid);
-    if dwPid = dwProcessId then
-    begin
-      Result := hWnd1;
-      Break;
-    end;
-    hWnd1 := GetNextWindow(hWnd1, GW_HWNDNEXT);
-  end;
 end;
 
 procedure TForm1.wndproc(var Msg: tmessage);
@@ -563,17 +584,21 @@ begin
       end;
     wm_paint:
       begin
+
         if (hoverLabel) then
         begin
           label1.Visible := true;
 
           label1.Caption := gdraw_text;
-          label1.Left := label_left - 1;
-          label1.Top := label_top - 1;
           label1.ParentColor := false;
           label1.Color := $000EADEE;
 
+          label1.Left := label_left - (label1.Width div 2);
+
+          label1.Top := label_top - 1;
+
         end;
+
       end;
     WM_HOTKEY:
       begin
@@ -631,6 +656,34 @@ begin
   end;
 end;
 
+procedure TForm1.ApplyFormSnapping(screenHeight: Integer);
+begin
+  // 窗体水平居中屏幕
+  Self.Left := Screen.Width div 2 - Self.Width div 2;
+
+  // 顶部吸附
+  if Self.Top < top_snap_distance then
+  begin
+    Self.Top := -(Self.Height - visible_height) + 50;
+    restore_state(); // 假设这个过程重置了节点状态
+    FormPosition := [fpTop];
+    g_core.utils.SetTaskbarAutoHide(false);
+  end
+  // 底部吸附
+  else if Self.Top + Self.Height > screenHeight then
+  begin
+    g_core.utils.SetTaskbarAutoHide(true);
+    Self.Top := screenHeight - Self.Height + 130;
+    FormPosition := [fpBottom];
+  end
+  // 中间/正常
+  else
+  begin
+    FormPosition := [];
+    g_core.utils.SetTaskbarAutoHide(false);
+  end;
+end;
+
 procedure TForm1.node_rebuilder(screenHeight: integer);
 begin
   if finish_layout then
@@ -645,34 +698,7 @@ begin
       // 计算和定位节点
       form1.CalculateAndPositionNodes();
 
-      // 窗体水平居中屏幕
-      form1.Left := Screen.Width div 2 - form1.Width div 2;
-
-      //顶部
-      if form1.Top < top_snap_distance then
-      begin
-        form1.Top := -(form1.Height - visible_height) + 50;
-
-        form1.Left := Screen.Width div 2 - form1.Width div 2;
-        restore_state();
-        FormPosition := [fpTop];
-        g_core.utils.SetTaskbarAutoHide(false);
-      end
-      //底部
-      else if form1.top + form1.height > screenHeight then
-      begin
-        g_core.utils.SetTaskbarAutoHide(true);
-        form1.Top := screenHeight - form1.Height + 130;
-        form1.Left := Screen.Width div 2 - form1.Width div 2;
-        FormPosition := [fpBottom]; // 设置位置为底部
-      end
-        //中间
-      else
-      begin
-        FormPosition := [];
-
-        g_core.utils.SetTaskbarAutoHide(false);              //隐藏任务栏
-      end;
+      ApplyFormSnapping(screenHeight);
     finally
       finish_layout := true;
     end;
@@ -700,7 +726,7 @@ end;
 
 procedure global_hook(hwnd: hwnd; uMsg, idEvent: UINT; dwTime: DWORD); stdcall;
 begin
-  HandleNewProcessesExport();
+//  HandleNewProcessesExport();
 end;
 
 procedure TForm1.show_side_form();
@@ -711,60 +737,6 @@ begin
   bottomForm := TbottomForm.Create(self);
 
   bottomForm.show;
-end;
-
-procedure TForm1.PureCalculateAndPositionNodes();
-var
-  Node: _node;
-  I, NodeCount, NodeSize, NodeGap: Integer;
-  ClientCenterY: Integer;
-  kys: TDictionary<string, TSettingItem>;
-  keys: TArray<string>;
-begin
-
-  NodeSize := g_core.nodes.node_size;
-  NodeGap := g_core.nodes.node_gap;
-  NodeCount := g_core.json.Settings.Count;
-  kys := g_core.json.Settings;
-
-  Form1.height := NodeSize + NodeSize div 2 + 130;
-  keys := kys.Keys.ToArray; // 将键集合转换为数组
-  ClientCenterY := Round((Self.ClientHeight - NodeSize * ScaleFactor)) div 2;
-  for I := 0 to NodeCount - 1 do
-  begin
-    var Key := keys[I];       // 通过索引获取键
-    var MValue := kys[Key];   // 通过键从字典中取值
-    if (I < Length(g_core.nodes.Nodes)) and (g_core.nodes.Nodes[I] <> nil) then
-    begin
-      Node := g_core.nodes.Nodes[I];
-
-      Node.Width := Round(NodeSize * ScaleFactor);
-      Node.Height := Round(NodeSize * ScaleFactor);
-
-      if I = 0 then
-        Node.Left := NodeGap + exptend
-      else
-        Node.Left := g_core.nodes.Nodes[I - 1].Left + NodeGap + Node.Width;
-
-      with Node do
-      begin
-        Top := ClientCenterY;
-        Center := true;
-        Transparent := true;
-        Stretch := true;
-
-        original_size.cx := Node.Width;
-        original_size.cy := Node.height;
-        center_point.x := Node.Left + Node.Width div 2;
-        center_point.y := Node.top + Node.height div 2;
-
-      end;
-
-    end;
-  end;
-  if NodeCount > 0 then
-    Self.Width := g_core.nodes.Nodes[NodeCount - 1].Left + g_core.nodes.Nodes[NodeCount - 1].Width + NodeGap + exptend;
-
 end;
 
 procedure TForm1.adjust_node_layout(screenHeight: integer);
@@ -779,36 +751,10 @@ begin
         label1.Visible := false;
       end;
       // 计算和定位节点
-      form1.PureCalculateAndPositionNodes();
-
-      // 窗体水平居中屏幕
-      form1.Left := Screen.Width div 2 - form1.Width div 2;
-
-      //顶部
-      if form1.Top < top_snap_distance then
-      begin
-        form1.Top := -(form1.Height - visible_height) + 50;
-
-        form1.Left := Screen.Width div 2 - form1.Width div 2;
-        restore_state();
-        FormPosition := [fpTop];
-        g_core.utils.SetTaskbarAutoHide(false);
-      end
-      //底部
-      else if form1.top + form1.height > screenHeight then
-      begin
-        g_core.utils.SetTaskbarAutoHide(true);
-        form1.Top := screenHeight - form1.Height + 130;
-        form1.Left := Screen.Width div 2 - form1.Width div 2;
-        FormPosition := [fpBottom]; // 设置位置为底部
-      end
-        //中间
-      else
-      begin
-        FormPosition := [];
-
-        g_core.utils.SetTaskbarAutoHide(false);              //隐藏任务栏
-      end;
+//      form1.PureCalculateAndPositionNodes();
+      CalculateAndPositionNodes();
+   // 调用统一的吸附逻辑
+      ApplyFormSnapping(screenHeight);
     finally
       finish_layout := true;
     end;
@@ -848,13 +794,15 @@ begin
 
   SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
-  dllmaincpp();
+//  dllmaincpp();
 
   SetTimer(Handle, 1101, 2000, @global_hook);
 
   adjust_node_layout(Screen.WorkAreaHeight);
 
 end;
+
+
 
 procedure TForm1.smooth_layout_adjustment(Sender: TObject);
 var
@@ -873,7 +821,7 @@ begin
 
   if node_at_cursor <> nil then
   begin
-       // 调整 rate 的值以控制缓动效果的强度
+
     rate := 0.1;  // 值越小，缓动越慢
 
       // 使用指数函数计算 ExpDelta
@@ -904,12 +852,8 @@ begin
 
   Node.center_point.x := Node.Left + Node.Width div 2;
   Node.center_point.y := Node.Top + Node.Height div 2;
-  //
-  //// 设置当前节点的新尺寸和位置，保持中心点不变
-  //  Node.SetBounds(Node.center_point.x - NewWidth div 2, Node.center_point.y - NewHeight div 2, NewWidth, NewHeight);
 
-
-  if top < top_snap_distance + 100 then
+  if node.top < top_snap_distance + 100 then
   begin
 
     Node.Width := NewWidth; // Floor(Node.original_size.cx * 1 );
@@ -920,7 +864,6 @@ begin
   else
   begin
 
-        // 调整顶部位置而不改变底部位置
     var newTop := Node.Top - (NewHeight - Node.Height);
 
     Node.SetBounds(Node.center_point.x - NewWidth div 2, newTop, NewWidth, NewHeight);
@@ -931,10 +874,25 @@ end;
 procedure TForm1.FormCreate(Sender: TObject);
 begin
 
-  SetWindowLong(Handle, GWL_EXSTYLE, GetWindowLong(Handle, GWL_EXSTYLE) or WS_EX_LAYERED);
+//  SetWindowLong(Handle, GWL_EXSTYLE, GetWindowLong(Handle, GWL_EXSTYLE) or WS_EX_LAYERED);
+//
+//  SetLayeredWindowAttributes(Handle, $000EADEE, 0, LWA_COLORKEY);
 
-  SetLayeredWindowAttributes(Handle, $000EADEE, 0, LWA_COLORKEY);
+  Form1.Color := clred;// $00202020; // Subtle Dark Gray
+  Form1.Color := $00202020; // Subtle Dark Gray
+  Form1.AlphaBlend := False; // 不要使用 AlphaBlend
 
+// SetLayeredWindowAttributes(Handle, 0, 230, LWA_ALPHA);
+  var bb: DWM_BLURBEHIND;
+
+  ZeroMemory(@bb, SizeOf(bb));
+  bb.dwFlags := DWM_BB_ENABLE;
+  bb.fEnable := True;
+  bb.hRgnBlur := 0; // 整个窗体模糊
+
+  DwmEnableBlurBehindWindow(Handle, bb);
+
+  MainFormHandle := Form1.Handle;
 end;
 
 procedure RemoveMouseHook;
@@ -960,10 +918,7 @@ var
   SettingsObj: TJSONObject;
 begin
 
-
-  //  UnregisterCOM();
   RemoveMouseHook();
-  //  UninstallMouseHook();
 
   SettingsObj := g_jsonobj.GetValue('settings') as TJSONObject;
   if SettingsObj = nil then

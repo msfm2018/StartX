@@ -8,17 +8,18 @@ uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Registry, Winapi.Dwmapi, core, Dialogs, ExtCtrls, Generics.Collections,
   Vcl.Imaging.pngimage, Winapi.ShellAPI, inifiles, Vcl.Imaging.jpeg, ComObj,
-  PsAPI, utils, System.SyncObjs, System.Math,
-  System.JSON, u_json, Vcl.Menus, InfoBarForm,
-  System.Generics.Collections, event, Vcl.StdCtrls;
+  PsAPI, utils, System.SyncObjs, System.Math, System.JSON, u_json, Vcl.Menus,
+  InfoBarForm, System.Generics.Collections, event, Vcl.StdCtrls;
 
 type
   TForm1 = class(TForm)
     Label1: TLabel;
-    procedure FormMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+
     procedure FormShow(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormCreate(Sender: TObject);
+    procedure FormMouseLeave(Sender: TObject);
+    procedure FormMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
 
   private
     node_at_cursor: _node;
@@ -31,7 +32,7 @@ type
     main_background: timage;
 
     procedure node_mouse_enter(Sender: TObject);
-
+    procedure Node_Mouse_Down(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
     procedure node_mouse_move(Sender: TObject; Shift: TShiftState; X, Y: Integer);
     procedure node_mouse_leave(Sender: TObject);
     procedure CalculateAndPositionNodes();
@@ -49,6 +50,7 @@ type
     procedure form_mouse_wheel(WheelMsg: TWMMouseWheel);
 
     procedure AdjustNodeSize(Node: _node; Rate: Double);
+    procedure SetClickThrough(Enable: Boolean);
   public
     procedure node_rebuilder(screenHeight: integer);
     procedure adjust_node_layout(screenHeight: integer);
@@ -174,8 +176,8 @@ begin
   NodeCount := g_core.json.Settings.Count;
   kys := g_core.json.Settings;
 
-  ClientCenterY := Round((Self.ClientHeight - NodeSize * ScaleFactor)) div 2;
-
+//  ClientCenterY := Round((Self.ClientHeight - NodeSize * ScaleFactor)) div 2;
+  ClientCenterY := Round((Self.ClientHeight - NodeSize * ScaleFactor) / 2);
   try
     try
 
@@ -189,8 +191,21 @@ begin
             FreeAndNil(v.memory_image);
           FreeAndNil(Node);
         end;
+      g_core.nodes.Nodes := nil;  // 或 SetLength(..., 0);
 
-      Form1.height := NodeSize + NodeSize div 2 + 130;
+      const MAX_RATE = 0.5; // 根据您的 Rate11/Rate 逻辑确定最大值
+      var ActualNodeHeight: Integer;
+      var MaxHeightIncrease: Integer;
+
+      ActualNodeHeight := Round(g_core.nodes.node_size * ScaleFactor);
+
+    // 预留的最大放大高度增量（向上和向下各一半）
+      MaxHeightIncrease := Round(ActualNodeHeight * MAX_RATE);
+
+    // 窗体高度 = 节点基准高度 + 上下基准边距 + MaxHeightIncrease
+      Form1.Height := ActualNodeHeight + Round(ActualNodeHeight / 2) + // 上下基准边距
+        MaxHeightIncrease + Label1.Height + 5; // 底部标签空间
+
 
       setlength(g_core.nodes.Nodes, NodeCount);
       I := 0;
@@ -246,7 +261,7 @@ begin
           Stretch := true;
           OnMouseLeave := node_mouse_leave;
           OnMouseMove := node_mouse_move;
-          OnMouseDown := FormMouseDown;
+          OnMouseDown := Node_Mouse_Down;
           OnClick := node_click;
 
           OnMouseEnter := node_mouse_enter;
@@ -280,8 +295,10 @@ begin
 
   gdraw_text := Node._tip;
 
-  label_top := Node.Top - 65;
-  label_left := Node.Left + (Node.Width div 2);
+  label_top := Self.ClientHeight - 30; // 距离 Form 底部约 30 像素
+
+
+  label_left := Self.ClientWidth div 2;
 
   hoverLabel := true;
   RunOnce := False;
@@ -325,8 +342,12 @@ begin
     var Node := _node(Sender);
     if hoverLabel then
     begin
-      label_top := Node.Top - 35;
-      label_left := Node.Left + (Node.Width div 4); //- (hoverLabel.Width div 2);
+
+      label_top := Self.ClientHeight - 30; // 距离 Form 底部约 30 像素
+
+
+      label_left := Self.ClientWidth div 2;
+
     end;
 
     GetCursorPos(lp);
@@ -338,11 +359,6 @@ begin
 
           // 调整当前节点
       Current_node := node_at_cursor;
-
-  //    var GC := (X mod (Current_node.original_size.cx * 2)) / (Current_node.original_size.cx * 2);
-  //
-  //  // 使用 Sin 函数生成 0-1-0 的变化率
-  //    var Rate11 := Sin(GC * Pi);
 
 
       if X > Current_node.original_size.cx div 2 then
@@ -368,9 +384,6 @@ begin
       for I := 0 to g_core.nodes.count - 1 do
       begin
         Current_node := g_core.nodes.Nodes[I];
-  //           if Node= Current_node then
-  //             Continue;
-
 
         a := Current_node.Left - ScreenToClient(lp).X + Current_node.Width div 2;
         b := Current_node.Top - ScreenToClient(lp).Y + Current_node.Height div 4;
@@ -420,6 +433,12 @@ end;
 
 procedure TForm1.FormMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
 begin
+  if (Button = mbLeft) then
+    move_windows(Handle);
+end;
+
+procedure TForm1.Node_Mouse_Down(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+begin
   if g_core.nodes.is_configuring then
     exit;
   if Button = mbleft then
@@ -429,6 +448,14 @@ begin
     EventDef.X := X;
   end;
 
+end;
+
+procedure TForm1.FormMouseLeave(Sender: TObject);
+begin
+  if fpTop in FormPosition then
+    SetClickThrough(true)
+  else
+    SetClickThrough(false)
 end;
 
 var
@@ -471,7 +498,7 @@ begin
     main_background := timage.Create(self);
   main_background.OnMouseDown := img_bgMouseDown;
   main_background.Width := Width;
-  g_core.utils.init_background(main_background, self, 'bg.png');
+//  g_core.utils.init_background(main_background, self, 'bg.png');
 
   left := g_core.json.Config.Left;
   top := g_core.json.Config.Top;
@@ -480,25 +507,46 @@ begin
 
 end;
 
-function FindWindowByProcessId(dwProcessId: DWORD): hWnd;
+procedure TForm1.SetClickThrough(Enable: Boolean);
+const
+  WS_EX_LAYERED = $00080000;
+  LWA_COLORKEY = $00000001;
+  LWA_ALPHA = $00000002;
 var
-  hWnd1: hWnd;
-  dwPid: DWORD;
+  ExStyle: LongInt;
 begin
-  Result := 0;
-  hWnd1 := GetTopWindow(0); // Get the first window
 
+  ExStyle := GetWindowLong(Handle, GWL_EXSTYLE);
 
-  while hWnd1 <> 0 do
+  if Enable then
   begin
-    GetWindowThreadProcessId(hWnd1, @dwPid);
-    if dwPid = dwProcessId then
-    begin
-      Result := hWnd1;
-      Break;
-    end;
-    hWnd1 := GetNextWindow(hWnd1, GW_HWNDNEXT);
+    // 开启点击穿透（最关键的一行！）
+    ExStyle := ExStyle or WS_EX_LAYERED or WS_EX_TRANSPARENT;
+    SetWindowLong(Handle, GWL_EXSTYLE, ExStyle);
+    // 可选：配合半透明防止误触（推荐 1~5）
+    SetLayeredWindowAttributes(Handle, 0, 5, LWA_ALPHA);
+
+    Form1.Color := $00202020; // Subtle Dark Gray
+    Form1.Color := $00202020; // Subtle Dark Gray
+    Form1.AlphaBlend := False; // 不要使用 AlphaBlend
+
+
+  end
+  else
+  begin
+
+    Form1.Color := $00202020; // Subtle Dark Gray
+    Form1.Color := $00202020; // Subtle Dark Gray
+    Form1.AlphaBlend := false; // 不要使用 AlphaBlend
+
+
+
+    // 关闭穿透（恢复正常响应鼠标）
+    ExStyle := ExStyle and not WS_EX_TRANSPARENT;
+    SetWindowLong(Handle, GWL_EXSTYLE, ExStyle);
+    SetLayeredWindowAttributes(Handle, 0, 255, LWA_ALPHA); // 完全不透明
   end;
+
 end;
 
 procedure TForm1.wndproc(var Msg: tmessage);
@@ -542,14 +590,14 @@ begin
         end
         else
         begin
-
+          SetClickThrough(false);
           if FormPosition = [] then
           begin
 
           end
           else if fpTop in FormPosition then
           begin
-
+            SetClickThrough(true);
             if form1.Top < top_snap_distance then
               form1.Top := -56;
           end
@@ -565,13 +613,16 @@ begin
       begin
         if (hoverLabel) then
         begin
+
           label1.Visible := true;
 
           label1.Caption := gdraw_text;
-          label1.Left := label_left - 1;
-          label1.Top := label_top - 1;
           label1.ParentColor := false;
           label1.Color := $000EADEE;
+
+          label1.Left := label_left - (label1.Width div 2);
+
+          label1.Top := label_top - 1;
 
         end;
       end;
@@ -651,6 +702,7 @@ begin
       //顶部
       if form1.Top < top_snap_distance then
       begin
+        SetClickThrough(true);
         form1.Top := -(form1.Height - visible_height) + 50;
 
         form1.Left := Screen.Width div 2 - form1.Width div 2;
@@ -700,7 +752,7 @@ end;
 
 procedure global_hook(hwnd: hwnd; uMsg, idEvent: UINT; dwTime: DWORD); stdcall;
 begin
-  HandleNewProcessesExport();
+//  HandleNewProcessesExport();
 end;
 
 procedure TForm1.show_side_form();
@@ -848,7 +900,7 @@ begin
 
   SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
-  dllmaincpp();
+//  dllmaincpp();
 
   SetTimer(Handle, 1101, 2000, @global_hook);
 

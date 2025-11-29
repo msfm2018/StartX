@@ -20,19 +20,20 @@ object Form1: TForm1
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnMouseDown = FormMouseDown
+  OnMouseLeave = FormMouseLeave
   OnShow = FormShow
   TextHeight = 12
   object Label1: TLabel
     Left = 168
     Top = 40
-    Width = 39
-    Height = 17
+    Width = 54
+    Height = 19
     Caption = 'Label1'
     Font.Charset = ANSI_CHARSET
     Font.Color = clWindowText
-    Font.Height = -14
+    Font.Height = -16
     Font.Name = 'Tahoma'
-    Font.Style = []
+    Font.Style = [fsBold]
     ParentFont = False
     Transparent = False
     Visible = False

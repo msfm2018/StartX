@@ -23,9 +23,9 @@ procedure write_png_with_text(const filename: pansichar; const text: pansichar;c
 
 
   //    server for system time
-function dllmaincpp(): Integer; stdcall; external injectName;
+//function dllmaincpp(): Integer; stdcall; external injectName;
 
-function HandleNewProcessesExport(): Integer; stdcall; external injectName;
+//function HandleNewProcessesExport(): Integer; stdcall; external injectName;
 
 
 

@@ -46,6 +46,7 @@ type
     procedure auto_run;
     procedure init_background(img: TImage; obj: tform; src: string);
     function rate(a, b: double): Double;
+    procedure SetClickThrough(form1:TForm;Enable: Boolean);
 
   end;
 
@@ -236,6 +237,50 @@ begin
     ShellExecute(0, 'open', PChar(Path), PChar(param), nil, SW_SHOWNORMAL);
   end;
 end;
+
+
+procedure t_utils.SetClickThrough(form1:TForm;Enable: Boolean);
+const
+  WS_EX_LAYERED = $00080000;
+  LWA_COLORKEY = $00000001;
+  LWA_ALPHA = $00000002;
+var
+  ExStyle: LongInt;
+begin
+
+  ExStyle := GetWindowLong(form1.Handle, GWL_EXSTYLE);
+
+  if Enable then
+  begin
+    // 开启点击穿透（最关键的一行！）
+    ExStyle := ExStyle or WS_EX_LAYERED or WS_EX_TRANSPARENT;
+    SetWindowLong(form1.Handle, GWL_EXSTYLE, ExStyle);
+    // 可选：配合半透明防止误触（推荐 1~5）
+    SetLayeredWindowAttributes(form1.Handle, 0, 5, LWA_ALPHA);
+
+    Form1.Color := $00202020; // Subtle Dark Gray
+    Form1.Color := $00202020; // Subtle Dark Gray
+    Form1.AlphaBlend := False; // 不要使用 AlphaBlend
+
+
+  end
+  else
+  begin
+
+    Form1.Color := $00202020; // Subtle Dark Gray
+    Form1.Color := $00202020; // Subtle Dark Gray
+    Form1.AlphaBlend := false; // 不要使用 AlphaBlend
+
+
+
+    // 关闭穿透（恢复正常响应鼠标）
+    ExStyle := ExStyle and not WS_EX_TRANSPARENT;
+    SetWindowLong(form1.Handle, GWL_EXSTYLE, ExStyle);
+    SetLayeredWindowAttributes(form1.Handle, 0, 255, LWA_ALPHA); // 完全不透明
+  end;
+
+end;
+
 
 function t_utils.rate(a, b: double): Double;
 begin

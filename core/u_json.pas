@@ -163,9 +163,9 @@ end;
 
 procedure parse_json(JSONObj: TJSONObject; var MySettings: TMySettings);
 var
-  SettingsObj, ConfigObj, ExclusionObj, IniObj, TmpObj: TJSONObject;
+  SettingsObj, ConfigObj, ExclusionObj: TJSONObject;
   Pair: TJSONPair;
-  TmpItem: TJSONObject;
+
   Key: string;
   SettingItem: TSettingItem;
 begin

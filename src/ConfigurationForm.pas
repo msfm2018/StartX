@@ -6,7 +6,7 @@ uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Math,
   System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs,
   Winapi.ShellAPI, Vcl.ComCtrls, Vcl.Grids, Vcl.ValEdit, Vcl.StdCtrls,
-  Vcl.ExtCtrls, Vcl.Buttons, utils, u_json, System.IniFiles,
+  Vcl.ExtCtrls, Vcl.Buttons, utils, u_json, System.IniFiles, Winapi.Dwmapi,
   Vcl.Imaging.pngimage, System.JSON, System.Generics.Collections, Vcl.Menus,
   ImgButton, winapi.UxTheme, ImgPanel, Vcl.Mask, System.Hash, System.ImageList,
   Vcl.ImgList, Vcl.Imaging.jpeg;
@@ -27,8 +27,8 @@ type
     p1: TPanel;
     p2: TPanel;
     Image2: TImage;
-    Label2: TLabel;
     Button1: TButton;
+    Label2: TLabel;
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormShow(Sender: TObject);
     procedure imgEdit1DblClick(Sender: TObject);
@@ -46,6 +46,7 @@ type
     procedure Image2MouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
     procedure Label2Click(Sender: TObject);
     procedure Button1Click(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
   private
     file_map: TDictionary<string, string>;
     procedure AddFileInfoToJson(const Key, ImageFileName, FilePath, ToolTip: string);
@@ -72,25 +73,27 @@ type
     Path: string;
   end;
 
-
-
 var
   xchange: Boolean = false;
   FRoundWindow: Boolean = true;
   FShadowForm: tform;
 
 var
-
   App: TStartMenuApp;
- const
+
+const
   PANEL_HEIGHT = 60;
-  ICON_SIZE = 32 ;
+  ICON_SIZE = 32;
+
 implementation
 
 {$R *.dfm}
 
 uses
   core, System.UITypes, ApplicationMain;
+     // 悬浮变色按钮
+
+
 
 function SaveAppIconAsPng(const FilePath: string): string;
 var
@@ -185,10 +188,6 @@ begin
   (Sender as TImgPanel).color := clBtnFace;
 
 end;
-
-
-
-
 
 procedure TCfgForm.Buttoaction_translatoradd(Sender: TObject);
 var
@@ -333,6 +332,38 @@ begin
   file_map.Free;
 end;
 
+procedure EnableAcrylicOrMica(AHandle: HWND);
+var
+  accent: DWORD;
+//  gradientColor: DWORD;
+begin
+  // Windows 11 Mica（优先）
+  if (Win32MajorVersion >= 10) and (Win32BuildNumber >= 22000) then
+  begin
+    // Mica 效果（Win11 最佳）
+    DwmSetWindowAttribute(AHandle, 38, PWideChar(2), SizeOf(Integer)); // DWMWA_SYSTEMBACKDROP_TYPE = 38
+    Exit;
+  end;
+
+  // Windows 10 Acrylic（回退）
+  accent := 2; // 2 = DWMA_USE_IMMERSIVE_DARK, 3 = Acrylic
+  var gradientColor := $1E1E1E or ($99 shl 24); // ABGR 格式：99=60%透明，1E1E1E=深灰
+  DwmSetWindowAttribute(AHandle, 19, @accent, SizeOf(accent));        // DWMWA_USE_IMMERSIVE_DARK
+  DwmSetWindowAttribute(AHandle, 20, @gradientColor, SizeOf(gradientColor)); // DWMWA_BORDER_COLOR 等其实是 Acrylic
+end;
+
+procedure TCfgForm.FormCreate(Sender: TObject);
+begin
+  BorderStyle := bsNone;           // 必须先去掉边框
+  EnableAcrylicOrMica(Handle);     // 一行搞定毛玻璃
+
+
+
+
+
+
+end;
+
 procedure TCfgForm.FormMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
 begin
   ReleaseCapture;
@@ -362,7 +393,6 @@ begin
   // 获取列数（假设 ListView 至少有两列）
   ColCount := ListView1.Columns.Count;
 
-
   if ColCount > 1 then
   begin
     // 计算除最后一列外所有列的宽度
@@ -378,7 +408,6 @@ procedure TCfgForm.btnorg_panelClick(Sender: TObject);
 begin
   org_board_state();
 end;
-
 
 procedure TCfgForm.org_board_state;
 begin
@@ -404,6 +433,12 @@ begin
   ListView1.Columns.Clear;
   ListView1.Columns.Add;  // 第一列：文件名
   ListView1.Columns.Add;  // 第二列：工具提示
+
+
+
+
+
+
 
   AdjustLastColumnWidth();
 

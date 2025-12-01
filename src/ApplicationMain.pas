@@ -3,7 +3,6 @@
 interface
 
 uses
-  //记得 保留  Winapi.GDIPAPI, Winapi.GDIPOBJ 程序中没有使用这部分 奇怪了  少了运行报错
 
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Registry, Winapi.Dwmapi, core, Dialogs, ExtCtrls, Generics.Collections,
@@ -50,7 +49,7 @@ type
     procedure form_mouse_wheel(WheelMsg: TWMMouseWheel);
 
     procedure AdjustNodeSize(Node: _node; Rate: Double);
-    procedure SetClickThrough(Enable: Boolean);
+
   public
     procedure node_rebuilder(screenHeight: integer);
     procedure adjust_node_layout(screenHeight: integer);
@@ -157,10 +156,6 @@ begin
 
 end;
 
-
-
-  // 计算和定位节点的逻辑
-              //重新设计 把图片预存到 内存中 不每次再文件中加载
 
 procedure TForm1.CalculateAndPositionNodes();
 var
@@ -295,7 +290,7 @@ begin
 
   gdraw_text := Node._tip;
 
-  label_top := Self.ClientHeight - 30; // 距离 Form 底部约 30 像素
+  label_top := Self.ClientHeight - 30;
 
 
   label_left := Self.ClientWidth div 2;
@@ -343,7 +338,7 @@ begin
     if hoverLabel then
     begin
 
-      label_top := Self.ClientHeight - 30; // 距离 Form 底部约 30 像素
+      label_top := Self.ClientHeight - 30;
 
 
       label_left := Self.ClientWidth div 2;
@@ -375,7 +370,6 @@ begin
 
         Rate11 := Sin(GC * Pi);
       end;
-  //        Rate11  := 0.5 * (1 - Cos(Pi * Rate11));
       AdjustNodeSize(Current_node, Rate11);
     end
     else if g_core.json.Config.style = 'style-1' then
@@ -414,7 +408,6 @@ begin
         else
         begin
 
-        // 调整顶部位置而不改变底部位置
           var newTop := Current_node.Top - (NewHeight - Current_node.Height);
 
           Current_node.SetBounds(Current_node.center_point.x - NewWidth div 2, newTop, NewWidth, NewHeight);
@@ -453,9 +446,9 @@ end;
 procedure TForm1.FormMouseLeave(Sender: TObject);
 begin
   if fpTop in FormPosition then
-    SetClickThrough(true)
+    g_core.utils.SetClickThrough(Form1,true)
   else
-    SetClickThrough(false)
+    g_core.utils.SetClickThrough(Form1,false)
 end;
 
 var
@@ -507,54 +500,13 @@ begin
 
 end;
 
-procedure TForm1.SetClickThrough(Enable: Boolean);
-const
-  WS_EX_LAYERED = $00080000;
-  LWA_COLORKEY = $00000001;
-  LWA_ALPHA = $00000002;
-var
-  ExStyle: LongInt;
-begin
-
-  ExStyle := GetWindowLong(Handle, GWL_EXSTYLE);
-
-  if Enable then
-  begin
-    // 开启点击穿透（最关键的一行！）
-    ExStyle := ExStyle or WS_EX_LAYERED or WS_EX_TRANSPARENT;
-    SetWindowLong(Handle, GWL_EXSTYLE, ExStyle);
-    // 可选：配合半透明防止误触（推荐 1~5）
-    SetLayeredWindowAttributes(Handle, 0, 5, LWA_ALPHA);
-
-    Form1.Color := $00202020; // Subtle Dark Gray
-    Form1.Color := $00202020; // Subtle Dark Gray
-    Form1.AlphaBlend := False; // 不要使用 AlphaBlend
-
-
-  end
-  else
-  begin
-
-    Form1.Color := $00202020; // Subtle Dark Gray
-    Form1.Color := $00202020; // Subtle Dark Gray
-    Form1.AlphaBlend := false; // 不要使用 AlphaBlend
-
-
-
-    // 关闭穿透（恢复正常响应鼠标）
-    ExStyle := ExStyle and not WS_EX_TRANSPARENT;
-    SetWindowLong(Handle, GWL_EXSTYLE, ExStyle);
-    SetLayeredWindowAttributes(Handle, 0, 255, LWA_ALPHA); // 完全不透明
-  end;
-
-end;
 
 procedure TForm1.wndproc(var Msg: tmessage);
 var
   lp: TPoint;
   reducedRect: TRect;
 var
-  DpiX, DpiY: UINT;
+  DpiX: UINT;
   screenHeight: Integer;
 begin
   inherited;
@@ -590,14 +542,14 @@ begin
         end
         else
         begin
-          SetClickThrough(false);
+            g_core.utils.SetClickThrough(Form1,false) ;
           if FormPosition = [] then
           begin
 
           end
           else if fpTop in FormPosition then
           begin
-            SetClickThrough(true);
+              g_core.utils.SetClickThrough(Form1,true) ;
             if form1.Top < top_snap_distance then
               form1.Top := -56;
           end
@@ -662,7 +614,6 @@ begin
     WM_DPICHANGED:
       begin
         DpiX := LOWORD(Msg.wParam);
-        DpiY := HIWORD(Msg.wParam);
 
           // 计算缩放比例
         ScaleFactor := DpiX / 96.0;
@@ -702,7 +653,8 @@ begin
       //顶部
       if form1.Top < top_snap_distance then
       begin
-        SetClickThrough(true);
+
+          g_core.utils.SetClickThrough(Form1,true) ;
         form1.Top := -(form1.Height - visible_height) + 50;
 
         form1.Left := Screen.Width div 2 - form1.Width div 2;
@@ -731,7 +683,7 @@ begin
 
   end;
 end;
-  //
+
 
 procedure WinEventProc(hook: THandle; event: DWORD; hwnd: hwnd; idObject, idChild: LONG; idEventThread, time: DWORD); stdcall;
 var
@@ -752,7 +704,6 @@ end;
 
 procedure global_hook(hwnd: hwnd; uMsg, idEvent: UINT; dwTime: DWORD); stdcall;
 begin
-//  HandleNewProcessesExport();
 end;
 
 procedure TForm1.show_side_form();
@@ -986,6 +937,7 @@ begin
   SetWindowLong(Handle, GWL_EXSTYLE, GetWindowLong(Handle, GWL_EXSTYLE) or WS_EX_LAYERED);
 
   SetLayeredWindowAttributes(Handle, $000EADEE, 0, LWA_COLORKEY);
+
 
 end;
 

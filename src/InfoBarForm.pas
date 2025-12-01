@@ -95,13 +95,12 @@ begin
 end;
    procedure TbottomForm.wndproc(var Msg: TMessage);
 var
-  DpiX, DpiY: UINT;
+  DpiX: UINT;
 begin
   case Msg.Msg of
     WM_DPICHANGED:
       begin
         DpiX := LOWORD(Msg.WParam);
-        DpiY := HIWORD(Msg.WParam);
         ScaleFactor := DpiX / 96.0;
 
         Height := 6;
@@ -255,7 +254,7 @@ initialization
     begin
       vobj := g_core.find_object_by_name('cfgForm');
       g_core.nodes.is_configuring := true;
-      SetWindowPos(TCfgForm(vobj).Handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE or SWP_NOSIZE);
+      SetWindowPos(TCfgForm(vobj).Handle, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE or SWP_NOSIZE);
       TCfgForm(vobj).Show;
     end);
   ActionMap.Add('退出',

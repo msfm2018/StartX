@@ -12,6 +12,7 @@ object CfgForm: TCfgForm
   Font.Style = []
   Position = poScreenCenter
   OnClose = FormClose
+  OnCreate = FormCreate
   OnMouseDown = FormMouseDown
   OnMouseWheel = FormMouseWheel
   OnShow = FormShow
@@ -79,14 +80,36 @@ object CfgForm: TCfgForm
       Color = clWhitesmoke
       ParentBackground = False
       TabOrder = 1
+      OnMouseDown = FormMouseDown
       DesignSize = (
         820
         569)
+      object Label2: TLabel
+        Left = 757
+        Top = 3
+        Width = 44
+        Height = 29
+        Cursor = crHandPoint
+        Alignment = taCenter
+        Anchors = [akLeft, akBottom]
+        AutoSize = False
+        Caption = #20851#38381
+        Color = 31743
+        Font.Charset = ANSI_CHARSET
+        Font.Color = clWhite
+        Font.Height = -16
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentColor = False
+        ParentFont = False
+        Transparent = False
+        OnClick = Label2Click
+      end
       object ListView1: TListView
-        Left = 8
-        Top = 16
-        Width = 801
-        Height = 413
+        Left = 1
+        Top = 40
+        Width = 818
+        Height = 389
         Margins.Left = 0
         Margins.Top = 0
         Margins.Right = 0
@@ -120,7 +143,7 @@ object CfgForm: TCfgForm
         Align = alBottom
         BevelEdges = [beTop]
         BevelOuter = bvNone
-        Color = 16382715
+        Color = clSilver
         Padding.Left = 10
         Padding.Top = 10
         Padding.Right = 10
@@ -128,30 +151,6 @@ object CfgForm: TCfgForm
         ParentBackground = False
         TabOrder = 2
         OnMouseDown = FormMouseDown
-        DesignSize = (
-          820
-          123)
-        object Label2: TLabel
-          Left = 24
-          Top = 100
-          Width = 44
-          Height = 23
-          Cursor = crHandPoint
-          Alignment = taCenter
-          Anchors = [akLeft, akBottom]
-          AutoSize = False
-          Caption = #20851#38381
-          Color = 31743
-          Font.Charset = ANSI_CHARSET
-          Font.Color = clWhite
-          Font.Height = -16
-          Font.Name = 'Tahoma'
-          Font.Style = []
-          ParentColor = False
-          ParentFont = False
-          Transparent = False
-          OnClick = Label2Click
-        end
         object ComboBox1: TComboBox
           Left = 628
           Top = 44
@@ -295,7 +294,7 @@ object CfgForm: TCfgForm
         Align = alBottom
         BevelEdges = []
         BevelOuter = bvNone
-        Color = 16382715
+        Color = clSilver
         Font.Charset = ANSI_CHARSET
         Font.Color = clWindowText
         Font.Height = -56

@@ -3,7 +3,7 @@ object bottomForm: TbottomForm
   Top = 0
   BorderStyle = bsNone
   Caption = 'menuform'
-  ClientHeight = 678
+  ClientHeight = 656
   ClientWidth = 86
   Color = 15066597
   Font.Charset = ANSI_CHARSET
